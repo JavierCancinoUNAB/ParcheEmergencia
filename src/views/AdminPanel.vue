@@ -348,6 +348,184 @@
         </div>
       </div>
 
+      <!-- Tab: Usuarios -->
+      <div v-if="activeTab === 'users'" class="tab-content">
+        <div class="section-header">
+          <h2>👥 Gestión de Usuarios</h2>
+          <div class="header-controls">
+            <select v-model="filterUserType" class="user-type-filter">
+              <option value="">Todos los usuarios</option>
+              <option value="Cliente">Clientes</option>
+              <option value="Operador">Operadores</option>
+              <option value="Administrador">Administradores</option>
+            </select>
+            <button @click="openNewUserForm" class="btn-primary">
+              ➕ Nuevo Usuario
+            </button>
+          </div>
+        </div>
+
+        <!-- Tabla de Usuarios -->
+        <div class="users-table-container">
+          <table class="users-table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Nombre</th>
+                <th>Email</th>
+                <th>Teléfono</th>
+                <th>Rol</th>
+                <th>Estado</th>
+                <th>Fecha Registro</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="user in filteredUsers" :key="user.id">
+                <td>{{ user.id }}</td>
+                <td>{{ user.firstName }} {{ user.lastName }}</td>
+                <td>{{ user.email }}</td>
+                <td>{{ user.phone || 'N/A' }}</td>
+                <td>
+                  <span :class="['role-badge', `role-${user.userType.toLowerCase()}`]">
+                    {{ user.userType }}
+                  </span>
+                </td>
+                <td>
+                  <span :class="['status-badge', user.isActive ? 'status-active' : 'status-inactive']">
+                    {{ user.isActive ? 'Activo' : 'Inactivo' }}
+                  </span>
+                </td>
+                <td>{{ formatDate(user.createdAt) }}</td>
+                <td class="actions-cell">
+                  <button @click="editUser(user)" class="btn-edit-small" title="Editar usuario">
+                    ✏️
+                  </button>
+                  <button 
+                    @click="toggleUserActive(user)" 
+                    :class="['btn-toggle-small', user.isActive ? 'btn-deactivate' : 'btn-activate']"
+                    :title="user.isActive ? 'Desactivar' : 'Activar'"
+                  >
+                    {{ user.isActive ? '🔒' : '🔓' }}
+                  </button>
+                  <button 
+                    @click="deleteUserConfirm(user.id)" 
+                    class="btn-delete-small"
+                    title="Eliminar usuario"
+                  >
+                    🗑️
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+
+          <div v-if="filteredUsers.length === 0" class="empty-state">
+            <p>📭 No hay usuarios {{ filterUserType ? `de tipo "${filterUserType}"` : '' }}</p>
+          </div>
+        </div>
+
+        <!-- Formulario de Usuario (Modal) -->
+        <div v-if="showUserForm" class="modal-overlay" @click.self="closeUserForm">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h3>{{ editingUser ? '✏️ Editar Usuario' : '➕ Nuevo Usuario' }}</h3>
+              <button @click="closeUserForm" class="btn-close">✖</button>
+            </div>
+            <form @submit.prevent="saveUser" class="user-form">
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Nombre *</label>
+                  <input 
+                    v-model="userForm.firstName" 
+                    type="text" 
+                    required 
+                    placeholder="Nombre"
+                  />
+                </div>
+                <div class="form-group">
+                  <label>Apellido *</label>
+                  <input 
+                    v-model="userForm.lastName" 
+                    type="text" 
+                    required 
+                    placeholder="Apellido"
+                  />
+                </div>
+              </div>
+
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Email *</label>
+                  <input 
+                    v-model="userForm.email" 
+                    type="email" 
+                    required 
+                    :disabled="editingUser"
+                    placeholder="correo@ejemplo.com"
+                  />
+                  <small v-if="editingUser" class="form-hint">
+                    El email no se puede modificar
+                  </small>
+                </div>
+                <div class="form-group">
+                  <label>Teléfono</label>
+                  <input 
+                    v-model="userForm.phone" 
+                    type="tel" 
+                    placeholder="+56 9 1234 5678"
+                  />
+                </div>
+              </div>
+
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Rol (Tipo de Usuario) *</label>
+                  <select v-model="userForm.userType" required>
+                    <option value="Cliente">Cliente</option>
+                    <option value="Operador">Operador</option>
+                    <option value="Administrador">Administrador</option>
+                  </select>
+                  <small class="form-hint">
+                    Define los permisos de acceso del usuario
+                  </small>
+                </div>
+                <div class="form-group">
+                  <label>Estado</label>
+                  <select v-model="userForm.isActive">
+                    <option :value="true">Activo</option>
+                    <option :value="false">Inactivo</option>
+                  </select>
+                </div>
+              </div>
+
+              <div v-if="!editingUser" class="form-group">
+                <label>Contraseña *</label>
+                <input 
+                  v-model="userForm.password" 
+                  type="password" 
+                  :required="!editingUser"
+                  placeholder="Mínimo 6 caracteres"
+                  minlength="6"
+                />
+                <small class="form-hint">
+                  La contraseña debe tener al menos 6 caracteres
+                </small>
+              </div>
+
+              <div class="form-actions">
+                <button type="button" @click="closeUserForm" class="btn-secondary">
+                  Cancelar
+                </button>
+                <button type="submit" class="btn-primary">
+                  {{ editingUser ? 'Actualizar' : 'Crear' }} Usuario
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+
       <!-- Tab: Estadísticas -->
       <div v-if="activeTab === 'stats'" class="tab-content">
         <div class="section-header">
@@ -429,6 +607,7 @@ import { useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/authStore'
 import * as ticketTypeApi from '../services/ticketTypeApiService'
 import * as eventApi from '../services/eventApiService'
+import * as userApi from '../services/userApiService'
 
 export default {
   name: 'AdminPanel',
@@ -443,15 +622,20 @@ export default {
     const editingEvent = ref(null)
     const editingTicketType = ref(null)
     const selectedEventForTickets = ref('')
+    const showUserForm = ref(false)
+    const editingUser = ref(null)
+    const filterUserType = ref('')
 
     // Data
     const events = ref([])
     const ticketTypes = ref([])
+    const users = ref([])
 
     // Tabs
     const tabs = [
       { id: 'events', label: 'Eventos', icon: '🎭' },
       { id: 'ticketTypes', label: 'Tipos de Ticket', icon: '🎫' },
+      { id: 'users', label: 'Usuarios', icon: '👥' },
       { id: 'stats', label: 'Estadísticas', icon: '📈' }
     ]
 
@@ -477,6 +661,17 @@ export default {
       capacity: 0
     })
 
+    // User Form
+    const userForm = ref({
+      email: '',
+      password: '',
+      firstName: '',
+      lastName: '',
+      phone: '',
+      userType: 'Cliente',
+      isActive: true
+    })
+
     // Computed
     const userName = computed(() => authStore.userName)
 
@@ -495,6 +690,11 @@ export default {
       return ticketTypes.value.reduce((sum, tt) => {
         return sum + (tt.price * tt.capacity)
       }, 0)
+    })
+
+    const filteredUsers = computed(() => {
+      if (!filterUserType.value) return users.value
+      return users.value.filter(u => u.userType === filterUserType.value)
     })
 
     // Methods
@@ -814,6 +1014,139 @@ export default {
       }
     }
 
+    // ===== FUNCIONES DE GESTIÓN DE USUARIOS =====
+    
+    const loadUsers = async () => {
+      try {
+        const response = await userApi.getAllUsers()
+        if (response && response.success && Array.isArray(response.data)) {
+          users.value = response.data
+          console.log('✅ Usuarios cargados:', users.value.length)
+        } else {
+          console.log('ℹ️ No hay usuarios en la base de datos')
+          users.value = []
+        }
+      } catch (error) {
+        console.error('Error al cargar usuarios:', error)
+        users.value = []
+      }
+    }
+
+    const openNewUserForm = () => {
+      resetUserForm()
+      showUserForm.value = true
+    }
+
+    const closeUserForm = () => {
+      showUserForm.value = false
+      editingUser.value = null
+      resetUserForm()
+    }
+
+    const resetUserForm = () => {
+      userForm.value = {
+        email: '',
+        password: '',
+        firstName: '',
+        lastName: '',
+        phone: '',
+        userType: 'Cliente',
+        isActive: true
+      }
+    }
+
+    const editUser = (user) => {
+      editingUser.value = user.id
+      userForm.value = {
+        email: user.email,
+        password: '', // No pre-llenamos la contraseña por seguridad
+        firstName: user.firstName,
+        lastName: user.lastName,
+        phone: user.phone || '',
+        userType: user.userType,
+        isActive: user.isActive
+      }
+      showUserForm.value = true
+    }
+
+    const saveUser = async () => {
+      try {
+        const userData = {
+          firstName: userForm.value.firstName,
+          lastName: userForm.value.lastName,
+          phone: userForm.value.phone,
+          userType: userForm.value.userType,
+          isActive: userForm.value.isActive
+        }
+
+        if (editingUser.value) {
+          // Actualizar usuario existente
+          // No incluir password en actualización a menos que se haya proporcionado uno nuevo
+          if (userForm.value.password) {
+            userData.password = userForm.value.password
+          }
+          
+          const response = await userApi.updateUser(editingUser.value, userData)
+          
+          if (response && response.success) {
+            // Actualizar en el array local
+            const index = users.value.findIndex(u => u.id === editingUser.value)
+            if (index !== -1) {
+              users.value[index] = { ...users.value[index], ...response.data }
+            }
+            alert('✅ Usuario actualizado correctamente')
+          }
+        } else {
+          // Crear nuevo usuario
+          userData.email = userForm.value.email
+          userData.password = userForm.value.password
+          
+          const response = await userApi.createUser(userData)
+          
+          if (response && response.success && response.data) {
+            users.value.push(response.data)
+            alert('✅ Usuario creado correctamente')
+          }
+        }
+        
+        closeUserForm()
+      } catch (error) {
+        console.error('Error al guardar usuario:', error)
+        alert('❌ Error al guardar usuario: ' + error.message)
+      }
+    }
+
+    const toggleUserActive = async (user) => {
+      try {
+        const newStatus = !user.isActive
+        const response = await userApi.toggleUserStatus(user.id, newStatus)
+        
+        if (response && response.success) {
+          user.isActive = newStatus
+          alert(`✅ Usuario ${newStatus ? 'activado' : 'desactivado'} correctamente`)
+        }
+      } catch (error) {
+        console.error('Error al cambiar estado del usuario:', error)
+        alert('❌ Error al cambiar estado: ' + error.message)
+      }
+    }
+
+    const deleteUserConfirm = async (userId) => {
+      if (confirm('¿Estás seguro de eliminar este usuario? Esta acción no se puede deshacer.')) {
+        try {
+          const response = await userApi.deleteUser(userId)
+          
+          if (response && response.success) {
+            users.value = users.value.filter(u => u.id !== userId)
+            alert('✅ Usuario eliminado correctamente')
+          }
+        } catch (error) {
+          console.error('Error al eliminar usuario:', error)
+          alert('❌ Error al eliminar usuario: ' + error.message)
+        }
+      }
+    }
+
     const handleLogout = () => {
       authStore.logout()
       router.push('/operator/login')
@@ -826,6 +1159,7 @@ export default {
     // Lifecycle
     onMounted(() => {
       loadData()
+      loadUsers()
     })
 
     return {
@@ -862,7 +1196,19 @@ export default {
       editTicketType,
       saveTicketType,
       deleteTicketType,
-      handleLogout
+      // Variables y funciones de usuarios
+      users,
+      filteredUsers,
+      showUserForm,
+      editingUser,
+      filterUserType,
+      userForm,
+      openNewUserForm,
+      closeUserForm,
+      editUser,
+      saveUser,
+      toggleUserActive,
+      deleteUserConfirm
     }
   }
 }
@@ -1537,5 +1883,196 @@ export default {
   .stats-table-container {
     overflow-x: auto;
   }
+
+  .users-table-container {
+    overflow-x: auto;
+  }
+}
+
+/* ===== ESTILOS PARA GESTIÓN DE USUARIOS ===== */
+
+.users-table-container {
+  background: white;
+  border-radius: 12px;
+  padding: 25px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.users-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 900px;
+}
+
+.users-table th,
+.users-table td {
+  padding: 12px;
+  text-align: left;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.users-table th {
+  background: #f5f7fa;
+  font-weight: 600;
+  color: #333;
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.users-table td {
+  color: #666;
+  font-size: 14px;
+}
+
+.users-table tbody tr:hover {
+  background: #f9fafb;
+}
+
+.role-badge {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.role-cliente {
+  background: #e3f2fd;
+  color: #1976d2;
+}
+
+.role-operador {
+  background: #fff3e0;
+  color: #f57c00;
+}
+
+.role-administrador {
+  background: #f3e5f5;
+  color: #7b1fa2;
+}
+
+.status-badge {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.status-active {
+  background: #e8f5e9;
+  color: #2e7d32;
+}
+
+.status-inactive {
+  background: #ffebee;
+  color: #c62828;
+}
+
+.actions-cell {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.btn-edit-small,
+.btn-toggle-small,
+.btn-delete-small {
+  background: none;
+  border: none;
+  font-size: 18px;
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 6px;
+  transition: all 0.2s;
+}
+
+.btn-edit-small {
+  color: #1976d2;
+}
+
+.btn-edit-small:hover {
+  background: #e3f2fd;
+  transform: scale(1.1);
+}
+
+.btn-toggle-small {
+  color: #f57c00;
+}
+
+.btn-toggle-small:hover {
+  background: #fff3e0;
+  transform: scale(1.1);
+}
+
+.btn-delete-small {
+  color: #d32f2f;
+}
+
+.btn-delete-small:hover {
+  background: #ffebee;
+  transform: scale(1.1);
+}
+
+.btn-activate {
+  color: #2e7d32;
+}
+
+.btn-activate:hover {
+  background: #e8f5e9;
+}
+
+.btn-deactivate {
+  color: #c62828;
+}
+
+.btn-deactivate:hover {
+  background: #ffebee;
+}
+
+.user-type-filter {
+  padding: 10px 15px;
+  border: 2px solid #e0e0e0;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  background: white;
+  cursor: pointer;
+  transition: border-color 0.3s;
+}
+
+.user-type-filter:focus {
+  outline: none;
+  border-color: #667eea;
+}
+
+.header-controls {
+  display: flex;
+  gap: 15px;
+  align-items: center;
+}
+
+.user-form {
+  padding: 30px;
+}
+
+.event-selector {
+  padding: 10px 15px;
+  border: 2px solid #e0e0e0;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  background: white;
+  cursor: pointer;
+  transition: border-color 0.3s;
+  min-width: 250px;
+}
+
+.event-selector:focus {
+  outline: none;
+  border-color: #667eea;
 }
 </style>

@@ -326,6 +326,8 @@ Javier Cancino:
 - Ajustes de Historias de usaurio
 - Ajuste SubTares.
 
+Sprint 2
+Sprint 3
 ---
 
 **Versión:** 2.0.0  

@@ -63,7 +63,8 @@
             <div class="alert alert-info mt-4">
               <i class="fas fa-info-circle me-2"></i>
               <strong>Importante:</strong> Presenta este código QR en la entrada del evento. 
-              También hemos enviado una copia a tu email. Tu entrada puede ser validada usando el código 
+              Puedes descargar tu entrada en PDF o enviarla por email usando los botones abajo. 
+              Tu entrada puede ser validada usando el código 
               <code class="bg-white px-2 py-1">{{ ticketCode }}</code> o tu RUT 
               <code class="bg-white px-2 py-1">{{ personalData.document }}</code>.
             </div>
@@ -272,6 +273,10 @@ export default {
         const pdf = generatePDFBlob()
         const pdfBlob = pdf.output('blob')
         
+        // Obtener el código QR como imagen
+        const canvas = document.getElementById('qrcode')
+        const qrCodeImage = canvas ? canvas.toDataURL('image/png') : null
+        
         // Crear FormData para enviar el archivo
         const formData = new FormData()
         formData.append('email', personalData.value.email)
@@ -280,6 +285,22 @@ export default {
         formData.append('eventName', selectedEvent.value.name)
         formData.append('ticketCode', ticketCode.value)
         formData.append('pdf', pdfBlob, `Entrada-${ticketCode.value}.pdf`)
+        
+        // Agregar datos adicionales del evento
+        if (selectedEvent.value.date) {
+          formData.append('eventDate', selectedEvent.value.date)
+        }
+        if (selectedEvent.value.location) {
+          formData.append('eventLocation', selectedEvent.value.location)
+        }
+        if (selectedTicket.value.name) {
+          formData.append('ticketType', selectedTicket.value.name)
+        }
+        
+        // Agregar el código QR como imagen
+        if (qrCodeImage) {
+          formData.append('qrCode', qrCodeImage)
+        }
         
         // URL del backend - ajusta según tu configuración
         const backendUrl = import.meta.env.VITE_API_URL || ''
@@ -292,32 +313,36 @@ export default {
         const result = await response.json()
         
         if (response.ok) {
-          alert(`✅ Entrada enviada exitosamente a ${personalData.value.email}`)
-          
-          // Si hay una URL de preview (para desarrollo), mostrarla en consola
+          // Si hay una URL de preview (Ethereal Email), mostrarla
           if (result.previewUrl) {
-            console.log('Preview del email:', result.previewUrl)
+            const verEmail = confirm(
+              `✅ Email enviado exitosamente!\n\n` +
+              `📧 Destinatario: ${personalData.value.email}\n\n` +
+              `🌐 Este es un email de prueba.\n` +
+              `¿Quieres ver el email en tu navegador?`
+            )
+            
+            if (verEmail) {
+              window.open(result.previewUrl, '_blank')
+            }
+            
+            // También mostrarlo en consola
+            console.log('📧 ═══════════════════════════════════════════════════════════')
+            console.log('📧 EMAIL ENVIADO - Ver en navegador:')
+            console.log('📧 ' + result.previewUrl)
+            console.log('📧 ═══════════════════════════════════════════════════════════')
+          } else {
+            alert(`✅ Entrada enviada exitosamente a ${personalData.value.email}`)
           }
         } else {
           throw new Error(result.message || 'Error al enviar el email')
         }
       } catch (error) {
-        console.error('Error al enviar el email:', error)
+        console.warn('⚠️ Email no enviado automáticamente:', error.message)
         
-        // Fallback: usar mailto como alternativa
-        const subject = encodeURIComponent(`Tu Entrada - ${selectedEvent.value.name}`)
-        const body = encodeURIComponent(
-          `Hola ${personalData.value.firstName},\n\n` +
-          `Aquí está tu entrada para ${selectedEvent.value.name}.\n` +
-          `Código: ${ticketCode.value}\n\n` +
-          `Por favor, descarga el PDF desde la página web usando el botón "Descargar Entrada".\n\n` +
-          `Nota: Para recibir el PDF por email automáticamente, asegúrate de que el servidor backend esté configurado correctamente.`
-        )
-        
-        // Preguntar al usuario si desea abrir el cliente de email
-        if (confirm('No se pudo enviar el email automáticamente. ¿Deseas abrir tu cliente de email para enviarlo manualmente?')) {
-          window.location.href = `mailto:${personalData.value.email}?subject=${subject}&body=${body}`
-        }
+        // En modo académico, simplemente lanzar el error para que onMounted lo capture
+        // y NO mostrar popup molesto al usuario
+        throw error
       }
     }
 
@@ -335,6 +360,16 @@ export default {
           personalData.value,
           ticketQuantity.value
         )
+        
+        // 📧 Intentar enviar email automáticamente (modo silencioso)
+        try {
+          console.log('📧 Intentando enviar email automáticamente...')
+          await sendTicketByEmail()
+        } catch (error) {
+          // Error silencioso - no molestar al usuario con popups
+          console.log('ℹ️ Email automático no enviado. Puedes usar el botón "Enviar por Email" manualmente.')
+          console.log('   Motivo:', error.message)
+        }
       }
     })
 

@@ -77,7 +77,17 @@ app.use('/api/tickets', ticketRoutes);
 // Ruta para enviar entrada por email
 app.post('/api/send-ticket-email', upload.single('pdf'), async (req, res) => {
   try {
-    const { email, firstName, lastName, eventName, ticketCode } = req.body;
+    const { 
+      email, 
+      firstName, 
+      lastName, 
+      eventName, 
+      ticketCode,
+      eventDate,
+      eventLocation,
+      ticketType,
+      qrCode
+    } = req.body;
     const pdfBuffer = req.file.buffer;
     
     // Validar datos requeridos
@@ -88,11 +98,21 @@ app.post('/api/send-ticket-email', upload.single('pdf'), async (req, res) => {
       });
     }
     
+    // Preparar datos del email con todos los campos opcionales
+    const emailData = {
+      email,
+      firstName,
+      lastName,
+      eventName,
+      ticketCode,
+      eventDate: eventDate || null,
+      eventLocation: eventLocation || null,
+      ticketType: ticketType || null,
+      qrCode: qrCode || null
+    };
+    
     // Enviar email
-    const result = await sendTicketEmail(
-      { email, firstName, lastName, eventName, ticketCode },
-      pdfBuffer
-    );
+    const result = await sendTicketEmail(emailData, pdfBuffer);
     
     res.json({
       success: true,

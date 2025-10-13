@@ -28,36 +28,14 @@ class PaymentService {
     // Remover espacios
     const cleaned = cardNumber.replace(/\s/g, '')
     
-    // Verificar si es una tarjeta de prueba
-    if (PaymentService.TEST_CARDS.includes(cleaned)) {
-      console.log('💳 Tarjeta de prueba detectada:', cleaned)
+    // 🎓 MODO ACADÉMICO: Aceptar cualquier tarjeta para trabajo de universidad
+    // Verificar que solo tenga números y longitud mínima correcta (13+ dígitos)
+    if (/^\d{13,19}$/.test(cleaned)) {
+      console.log('💳 Tarjeta aceptada (modo académico):', cleaned)
       return true
     }
     
-    // Verificar que solo tenga números y longitud correcta
-    if (!/^\d{13,19}$/.test(cleaned)) {
-      return false
-    }
-    
-    // Algoritmo de Luhn
-    let sum = 0
-    let isEven = false
-    
-    for (let i = cleaned.length - 1; i >= 0; i--) {
-      let digit = parseInt(cleaned[i])
-      
-      if (isEven) {
-        digit *= 2
-        if (digit > 9) {
-          digit -= 9
-        }
-      }
-      
-      sum += digit
-      isEven = !isEven
-    }
-    
-    return sum % 10 === 0
+    return false
   }
 
   /**
@@ -103,26 +81,13 @@ class PaymentService {
     
     const [month, year] = expiry.split('/').map(Number)
     
-    // Validar mes
+    // 🎓 MODO ACADÉMICO: Solo validar formato básico
+    // Validar mes entre 1 y 12
     if (month < 1 || month > 12) {
       return false
     }
     
-    // Obtener fecha actual
-    const now = new Date()
-    const currentYear = now.getFullYear() % 100 // Últimos 2 dígitos
-    const currentMonth = now.getMonth() + 1
-    
-    // Comparar año
-    if (year < currentYear) {
-      return false
-    }
-    
-    // Si es el mismo año, comparar mes
-    if (year === currentYear && month < currentMonth) {
-      return false
-    }
-    
+    // Aceptar cualquier año (no verificar si está vencida)
     return true
   }
 
@@ -133,9 +98,8 @@ class PaymentService {
    * @returns {boolean} - True si es válido
    */
   validateCVV(cvv, cardType) {
-    // American Express usa 4 dígitos, otros usan 3
-    const expectedLength = cardType === 'amex' ? 4 : 3
-    return /^\d+$/.test(cvv) && cvv.length === expectedLength
+    // 🎓 MODO ACADÉMICO: Aceptar CVV de 3 o 4 dígitos
+    return /^\d{3,4}$/.test(cvv)
   }
 
   /**
