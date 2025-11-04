@@ -115,18 +115,18 @@ const AuditLog = sequelize.define('AuditLog', {
     comment: 'Información adicional en formato JSON'
   },
   
-  // IP y datos de sesión
-  ip_address: {
-    type: DataTypes.STRING(50),
-    allowNull: true,
-    comment: 'Dirección IP desde donde se realizó la validación'
-  },
+  // IP y datos de sesión - COMENTADOS: NO EXISTEN EN LA BD
+  // ip_address: {
+  //   type: DataTypes.STRING(50),
+  //   allowNull: true,
+  //   comment: 'Dirección IP desde donde se realizó la validación'
+  // },
   
-  user_agent: {
-    type: DataTypes.STRING(500),
-    allowNull: true,
-    comment: 'User agent del navegador'
-  },
+  // user_agent: {
+  //   type: DataTypes.STRING(500),
+  //   allowNull: true,
+  //   comment: 'User agent del navegador'
+  // },
   
   // Timestamp
   timestamp: {
