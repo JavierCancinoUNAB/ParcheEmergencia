@@ -215,6 +215,7 @@ export const getEventReport = async (req, res) => {
  */
 export const generatePDFReport = async (req, res) => {
   try {
+    console.log('📄 Solicitud de generación PDF recibida:', req.body);
     const { eventId, startDate, endDate, action } = req.body;
 
     let event = null;
@@ -222,16 +223,21 @@ export const generatePDFReport = async (req, res) => {
 
     // Si se proporciona eventId, validar el evento
     if (eventId) {
+      console.log(`🔍 Buscando evento con ID: ${eventId}`);
       event = await Event.findByPk(eventId);
       
       if (!event) {
+        console.log(`❌ Evento no encontrado: ${eventId}`);
         return res.status(404).json({
           success: false,
           message: 'Evento no encontrado'
         });
       }
       
+      console.log(`✅ Evento encontrado: ${event.name}`);
       where.event_id = event.id;
+    } else {
+      console.log('ℹ️ Sin eventId especificado, generando reporte general');
     }
 
     // Construir filtros para la consulta
@@ -242,14 +248,18 @@ export const generatePDFReport = async (req, res) => {
     }
 
     // Obtener logs de auditoría
+    console.log('📊 Consultando logs de auditoría con filtros:', where);
     let auditLogs = await AuditLog.findAll({
       where,
       order: [['timestamp', 'DESC']],
       limit: 5000
     });
 
+    console.log(`📝 Se encontraron ${auditLogs.length} logs de auditoría`);
+
     // Si se solicitó filtrar por 'action', hacerlo en memoria
     if (action) {
+      const beforeFilter = auditLogs.length;
       auditLogs = auditLogs.filter(l => {
         const plain = (l.metadata && JSON.stringify(l.metadata)) || '';
         const msg = (l.message || '').toString();
@@ -257,9 +267,11 @@ export const generatePDFReport = async (req, res) => {
         const candidates = [actionField, plain, msg].filter(Boolean).map(c => c.toString().toLowerCase());
         return candidates.some(c => c.includes(action.toString().toLowerCase()));
       });
+      console.log(`🔍 Filtrado por action '${action}': ${beforeFilter} -> ${auditLogs.length} logs`);
     }
 
     if (!auditLogs || auditLogs.length === 0) {
+      console.log('⚠️ No se encontraron registros de auditoría');
       return res.status(404).json({
         success: false,
         message: 'No se encontraron registros de auditoría'
@@ -267,6 +279,7 @@ export const generatePDFReport = async (req, res) => {
     }
 
     // Normalizar logs
+    console.log('🔄 Normalizando logs...');
     const normalizedLogs = auditLogs.map(l => {
       const json = l.toJSON ? l.toJSON() : l;
       json.details = json.details || json.metadata || {};
@@ -280,8 +293,16 @@ export const generatePDFReport = async (req, res) => {
       location: 'Sistema General'
     };
 
+    console.log('📄 Generando PDF con:', {
+      evento: reportEvent.name,
+      logsCount: normalizedLogs.length,
+      filtros: { startDate, endDate, action }
+    });
+
     // Generar PDF usando el servicio
     const doc = generateAuditReportPDF(reportEvent, normalizedLogs, { startDate, endDate, action });
+    
+    console.log('✅ PDF generado exitosamente');
 
     // Configurar headers para descarga
     const filename = event 
