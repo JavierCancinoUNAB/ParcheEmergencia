@@ -61,24 +61,30 @@ export const createOperator = async (req, res) => {
       });
     }
 
-    // Crear nuevo operador
-    const operador = await Operador.create({
+    // Crear nuevo operador usando el modelo User base
+    const operador = await User.create({
       email,
       password,
       firstName,
       lastName,
       phone,
+      userType: 'Operador',
       employeeId: employeeId || `OP-${Date.now()}`,
       shift: shift || 'mañana',
+      totalValidations: 0,
       isActive: true
     });
+
+    // Devolver datos sin password
+    const { password: _, ...operadorData } = operador.toJSON();
 
     res.status(201).json({
       success: true,
       message: 'Operador creado exitosamente',
-      data: operador.toPublicJSON()
+      data: operadorData
     });
   } catch (error) {
+    console.error('Error al crear operador:', error);
     res.status(500).json({
       success: false,
       message: 'Error al crear operador',
@@ -113,24 +119,29 @@ export const createAdministrator = async (req, res) => {
       });
     }
 
-    // Crear nuevo administrador
-    const administrador = await Administrador.create({
+    // Crear nuevo administrador usando el modelo User base
+    const administrador = await User.create({
       email,
       password,
       firstName,
       lastName,
       phone,
+      userType: 'Administrador',
       adminLevel: adminLevel || 'moderador',
       permissions: permissions || ['manage_events', 'view_reports'],
       isActive: true
     });
 
+    // Devolver datos sin password
+    const { password: _, ...adminData } = administrador.toJSON();
+
     res.status(201).json({
       success: true,
       message: 'Administrador creado exitosamente',
-      data: administrador.toPublicJSON()
+      data: adminData
     });
   } catch (error) {
+    console.error('Error al crear administrador:', error);
     res.status(500).json({
       success: false,
       message: 'Error al crear administrador',
@@ -573,23 +584,30 @@ export const createClient = async (req, res) => {
       });
     }
 
-    // Crear nuevo cliente
-    const cliente = await Cliente.create({
+    // Crear nuevo cliente usando el modelo User base
+    const cliente = await User.create({
       email,
       password,
       firstName,
       lastName,
       phone,
+      userType: 'Cliente',
       document,
+      totalPurchases: 0,
+      totalSpent: 0,
       isActive: true
     });
+
+    // Devolver datos sin password
+    const { password: _, ...clienteData } = cliente.toJSON();
 
     res.status(201).json({
       success: true,
       message: 'Cliente creado exitosamente',
-      data: cliente.toPublicJSON()
+      data: clienteData
     });
   } catch (error) {
+    console.error('Error al crear cliente:', error);
     res.status(500).json({
       success: false,
       message: 'Error al crear cliente',

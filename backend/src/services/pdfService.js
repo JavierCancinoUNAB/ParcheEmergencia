@@ -89,32 +89,32 @@ export const generateTicketPDF = async (ticketData) => {
 
       // Evento
       doc.font('Helvetica-Bold').text('Evento:', rightColumn, rightY);
-      doc.font('Helvetica').text(ticketData.eventName, rightColumn + 80, rightY, { width: 250 });
+      doc.font('Helvetica').text(ticketData.eventName || 'Evento', rightColumn + 80, rightY, { width: 250 });
       rightY += 20;
 
       // Fecha
       doc.font('Helvetica-Bold').text('Fecha:', rightColumn, rightY);
-      doc.font('Helvetica').text(ticketData.eventDate, rightColumn + 80, rightY);
+      doc.font('Helvetica').text(ticketData.eventDate || 'Por confirmar', rightColumn + 80, rightY);
       rightY += 20;
 
       // Ubicación
       doc.font('Helvetica-Bold').text('Ubicación:', rightColumn, rightY);
-      doc.font('Helvetica').text(ticketData.eventLocation, rightColumn + 80, rightY, { width: 250 });
+      doc.font('Helvetica').text(ticketData.eventLocation || 'Por confirmar', rightColumn + 80, rightY, { width: 250 });
       rightY += 20;
 
       // Tipo de entrada
       doc.font('Helvetica-Bold').text('Tipo de Entrada:', rightColumn, rightY);
-      doc.font('Helvetica').text(ticketData.ticketTypeName, rightColumn + 80, rightY);
+      doc.font('Helvetica').text(ticketData.ticketTypeName || 'General', rightColumn + 80, rightY);
       rightY += 20;
 
       // Cantidad
       doc.font('Helvetica-Bold').text('Cantidad:', rightColumn, rightY);
-      doc.font('Helvetica').text(ticketData.quantity.toString(), rightColumn + 80, rightY);
+      doc.font('Helvetica').text((ticketData.quantity || 1).toString(), rightColumn + 80, rightY);
       rightY += 20;
 
       // Precio Total
       doc.font('Helvetica-Bold').text('Precio Total:', rightColumn, rightY);
-      doc.font('Helvetica').text(`$${ticketData.totalAmount}`, rightColumn + 80, rightY);
+      doc.font('Helvetica').text(`$${ticketData.totalAmount || ticketData.price || 0}`, rightColumn + 80, rightY);
 
       // Línea separadora
       rightY += 30;
@@ -133,12 +133,12 @@ export const generateTicketPDF = async (ticketData) => {
 
       // Nombre
       doc.font('Helvetica-Bold').text('Nombre:', rightColumn, rightY);
-      doc.font('Helvetica').text(ticketData.buyerName, rightColumn + 80, rightY);
+      doc.font('Helvetica').text(ticketData.buyerName || 'N/A', rightColumn + 80, rightY);
       rightY += 20;
 
       // Email
       doc.font('Helvetica-Bold').text('Email:', rightColumn, rightY);
-      doc.font('Helvetica').text(ticketData.buyerEmail, rightColumn + 80, rightY, { width: 250 });
+      doc.font('Helvetica').text(ticketData.buyerEmail || 'N/A', rightColumn + 80, rightY, { width: 250 });
       rightY += 20;
 
       // Teléfono
@@ -150,7 +150,7 @@ export const generateTicketPDF = async (ticketData) => {
 
       // Documento
       doc.font('Helvetica-Bold').text('Documento:', rightColumn, rightY);
-      doc.font('Helvetica').text(ticketData.buyerDocument, rightColumn + 80, rightY);
+      doc.font('Helvetica').text(ticketData.buyerDocument || 'N/A', rightColumn + 80, rightY);
 
       // Caja de información importante
       yPosition = rightY + 40;

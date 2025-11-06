@@ -13,6 +13,8 @@ export const useTicketStore = defineStore('ticket', {
     serviceCharge: 5.00,
     tickets: [], // Array de tickets comprados (cargado desde localStorage)
     paymentResult: null, // Guardar resultado del pago
+    emailSent: false, // Indica si el email fue enviado automáticamente
+    emailInfo: null, // Información del email enviado (messageId, previewUrl, recipient)
     personalData: {
       firstName: '',
       lastName: '',
@@ -361,6 +363,21 @@ export const useTicketStore = defineStore('ticket', {
         const ticketData = await ticketResponse.json()
         console.log('✅ Ticket guardado en BD:', ticketData.data)
         
+        // Capturar información del email enviado automáticamente
+        if (ticketData.emailSent) {
+          this.emailSent = true
+          this.emailInfo = ticketData.emailInfo
+          console.log('📧 Email enviado automáticamente a:', ticketData.emailInfo?.recipient)
+          if (ticketData.emailInfo?.previewUrl) {
+            console.log('🔗 Preview URL (desarrollo):', ticketData.emailInfo.previewUrl)
+          }
+        } else {
+          this.emailSent = false
+          if (ticketData.emailError) {
+            console.warn('⚠️ El email no pudo ser enviado:', ticketData.emailError)
+          }
+        }
+        
         return ticketData.data
       } catch (error) {
         console.error('❌ Error al guardar ticket en BD:', error)
@@ -486,6 +503,8 @@ export const useTicketStore = defineStore('ticket', {
       this.ticketDetails = { gate: '', seat: '' }
       this.ticketCode = ''
       this.processing = false
+      this.emailSent = false
+      this.emailInfo = null
     },
 
     // Inicializar el store (llamar al montar la aplicación)

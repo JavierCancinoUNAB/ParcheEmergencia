@@ -4,6 +4,8 @@ import Event from '../models/Event.js';
 import User from '../models/User.js';
 import sequelize from '../config/database.js';
 import { Op } from 'sequelize';
+import { generateTicketPDF } from '../services/pdfService.js';
+import { sendTicketEmail } from '../services/emailService.js';
 
 /**
  * Obtener todos los tickets
@@ -340,11 +342,73 @@ export const createTicket = async (req, res) => {
       ]
     });
     
-    res.status(201).json({
-      success: true,
-      message: 'Ticket creado exitosamente',
-      data: fullTicket
-    });
+    // Enviar email automáticamente con el PDF del ticket
+    try {
+      console.log('📧 Preparando envío de email automático...');
+      
+      // Preparar datos para el PDF
+      const pdfData = {
+        ticketCode: fullTicket.ticketCode || fullTicket.ticket_code,
+        eventName: fullTicket.ticketType?.event?.name || 'Evento',
+        eventDate: fullTicket.ticketType?.event?.date || 'Fecha no disponible',
+        eventLocation: fullTicket.ticketType?.event?.location || 'Ubicación no disponible',
+        ticketTypeName: fullTicket.ticketType?.name || 'General',
+        sector: fullTicket.ticketType?.sector || 'General',
+        quantity: fullTicket.quantity || 1,
+        price: fullTicket.price || 0,
+        totalAmount: (fullTicket.price || 0) * (fullTicket.quantity || 1),
+        buyerName: fullTicket.buyerName || fullTicket.buyer_name || `${user.firstName} ${user.lastName}`,
+        buyerEmail: fullTicket.buyerEmail || fullTicket.buyer_email || user.email,
+        buyerPhone: fullTicket.buyerPhone || fullTicket.buyer_phone || user.phone || '',
+        buyerDocument: fullTicket.buyerDocument || fullTicket.buyer_document || user.document || user.rut || '',
+        purchaseDate: fullTicket.purchaseDate || fullTicket.purchase_date || fullTicket.createdAt
+      };
+      
+      console.log('📄 Generando PDF del ticket...');
+      const pdfBuffer = await generateTicketPDF(pdfData);
+      
+      // Preparar datos para el email
+      const emailData = {
+        email: pdfData.buyerEmail,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        eventName: pdfData.eventName,
+        ticketCode: pdfData.ticketCode
+      };
+      
+      console.log(`📨 Enviando email a: ${emailData.email}`);
+      const emailResult = await sendTicketEmail(emailData, pdfBuffer);
+      
+      console.log('✅ Email enviado exitosamente:', emailResult.messageId);
+      if (emailResult.previewUrl) {
+        console.log('🔗 Preview URL:', emailResult.previewUrl);
+      }
+      
+      // Devolver información del email enviado
+      return res.status(201).json({
+        success: true,
+        message: 'Ticket creado exitosamente y email enviado',
+        data: fullTicket,
+        emailSent: true,
+        emailInfo: {
+          messageId: emailResult.messageId,
+          previewUrl: emailResult.previewUrl, // Para desarrollo con Ethereal
+          recipient: emailData.email
+        }
+      });
+    } catch (emailError) {
+      // No fallar la creación del ticket si el email falla
+      console.error('⚠️ Error al enviar email (ticket creado exitosamente):', emailError.message);
+      
+      // Devolver que el ticket se creó pero el email falló
+      return res.status(201).json({
+        success: true,
+        message: 'Ticket creado exitosamente (el email no pudo ser enviado)',
+        data: fullTicket,
+        emailSent: false,
+        emailError: emailError.message
+      });
+    }
   } catch (error) {
     // Solo hacer rollback si la transacción no ha sido completada
     if (transaction && !transaction.finished) {

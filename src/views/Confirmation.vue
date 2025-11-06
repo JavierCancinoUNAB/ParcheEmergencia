@@ -60,10 +60,30 @@
               </div>
             </div>
             
+            <!-- Mensaje de email enviado automáticamente -->
+            <div v-if="emailSent" class="alert alert-success mt-4">
+              <i class="fas fa-envelope-circle-check me-2"></i>
+              <strong>¡Email enviado!</strong> Hemos enviado tu entrada automáticamente a 
+              <strong>{{ emailInfo?.recipient || personalData.email }}</strong>. 
+              Revisa tu bandeja de entrada.
+              <div v-if="emailInfo?.previewUrl" class="mt-2 small">
+                <i class="fas fa-flask me-1"></i>
+                <em>Modo desarrollo:</em> 
+                <a :href="emailInfo.previewUrl" target="_blank" class="text-white">
+                  Ver email de prueba →
+                </a>
+              </div>
+            </div>
+            <div v-else class="alert alert-warning mt-4">
+              <i class="fas fa-exclamation-triangle me-2"></i>
+              <strong>Atención:</strong> No pudimos enviar el email automáticamente. 
+              Puedes usar el botón "Enviar por Email" abajo para intentarlo nuevamente.
+            </div>
+            
             <div class="alert alert-info mt-4">
               <i class="fas fa-info-circle me-2"></i>
               <strong>Importante:</strong> Presenta este código QR en la entrada del evento. 
-              También hemos enviado una copia a tu email. Tu entrada puede ser validada usando el código 
+              Tu entrada puede ser validada usando el código 
               <code class="bg-white px-2 py-1">{{ ticketCode }}</code> o tu RUT 
               <code class="bg-white px-2 py-1">{{ personalData.document }}</code>.
             </div>
@@ -113,7 +133,9 @@ export default {
       ticketCode,
       ticketQuantity,
       totalAmount,
-      paymentResult
+      paymentResult,
+      emailSent,
+      emailInfo
     } = storeToRefs(store)
 
     // Verificar que llegamos aquí correctamente
@@ -346,6 +368,8 @@ export default {
       ticketQuantity,
       totalAmount,
       paymentResult,
+      emailSent,
+      emailInfo,
       getCardName,
       getCardIcon,
       downloadTicket,

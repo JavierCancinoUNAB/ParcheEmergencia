@@ -1,11 +1,15 @@
 import nodemailer from 'nodemailer';
 
+// Variable global para almacenar la cuenta de prueba
+let testAccountCache = null;
+
 // Configurar el transportador de email
-const createTransporter = () => {
+const createTransporter = async () => {
   // Para desarrollo, usar un servicio de prueba como Ethereal
   // Para producción, configura con tu servicio real (Gmail, SendGrid, etc.)
   
-  if (process.env.EMAIL_SERVICE === 'gmail') {
+  if (process.env.EMAIL_SERVICE === 'gmail' && process.env.EMAIL_USER && process.env.EMAIL_PASSWORD) {
+    console.log('📧 Usando Gmail con usuario:', process.env.EMAIL_USER);
     return nodemailer.createTransport({
       service: 'gmail',
       auth: {
@@ -15,21 +19,47 @@ const createTransporter = () => {
     });
   }
   
-  // Configuración genérica SMTP
+  // Si hay configuración SMTP completa, usarla
+  if (process.env.SMTP_USER && process.env.SMTP_PASSWORD) {
+    console.log('📧 Usando SMTP configurado:', process.env.SMTP_USER);
+    return nodemailer.createTransport({
+      host: process.env.SMTP_HOST || 'smtp.ethereal.email',
+      port: parseInt(process.env.SMTP_PORT) || 587,
+      secure: false,
+      auth: {
+        user: process.env.SMTP_USER,
+        pass: process.env.SMTP_PASSWORD
+      }
+    });
+  }
+  
+  // Si no hay configuración, crear cuenta de prueba Ethereal una sola vez
+  if (!testAccountCache) {
+    console.log('📧 No hay configuración SMTP, creando cuenta de prueba Ethereal...');
+    try {
+      testAccountCache = await nodemailer.createTestAccount();
+      console.log('✅ Cuenta de prueba creada:', testAccountCache.user);
+      console.log('🔗 Los emails se pueden ver en: https://ethereal.email/messages');
+    } catch (error) {
+      console.error('❌ Error al crear cuenta Ethereal:', error.message);
+      throw new Error('No se pudo crear cuenta de prueba de email');
+    }
+  }
+  
   return nodemailer.createTransport({
-    host: process.env.SMTP_HOST || 'smtp.ethereal.email',
-    port: process.env.SMTP_PORT || 587,
+    host: 'smtp.ethereal.email',
+    port: 587,
     secure: false,
     auth: {
-      user: process.env.SMTP_USER,
-      pass: process.env.SMTP_PASSWORD
+      user: testAccountCache.user,
+      pass: testAccountCache.pass
     }
   });
 };
 
 export const sendTicketEmail = async (emailData, pdfBuffer) => {
   try {
-    const transporter = createTransporter();
+    const transporter = await createTransporter();
     
     const mailOptions = {
       from: process.env.EMAIL_FROM || '"Sistema de Boletería" <noreply@ticketvue.com>',
@@ -103,20 +133,24 @@ export const sendTicketEmail = async (emailData, pdfBuffer) => {
     
     const info = await transporter.sendMail(mailOptions);
     
-    console.log('Email enviado:', info.messageId);
+    console.log('✅ Email enviado exitosamente!');
+    console.log('📧 Message ID:', info.messageId);
     
-    // Si usas Ethereal para testing, muestra la URL de preview
-    if (process.env.SMTP_HOST === 'smtp.ethereal.email') {
-      console.log('Preview URL:', nodemailer.getTestMessageUrl(info));
+    // Siempre intentar obtener preview URL (funciona con Ethereal)
+    const previewUrl = nodemailer.getTestMessageUrl(info);
+    if (previewUrl) {
+      console.log('🔗 Preview URL:', previewUrl);
+      console.log('👉 Abre este link en tu navegador para ver el email con el PDF adjunto');
     }
     
     return {
       success: true,
       messageId: info.messageId,
-      previewUrl: nodemailer.getTestMessageUrl(info)
+      previewUrl: previewUrl
     };
   } catch (error) {
-    console.error('Error al enviar email:', error);
+    console.error('❌ Error al enviar email:', error.message);
+    console.error('Stack:', error.stack);
     throw new Error('Error al enviar el email: ' + error.message);
   }
 };

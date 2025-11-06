@@ -75,6 +75,26 @@ export const createEvent = async (req, res) => {
       });
     }
     
+    // Normalizar categoría: convertir a minúsculas y mapear valores
+    if (eventData.category) {
+      const categoryMap = {
+        'deporte': 'deportes',
+        'deportes': 'deportes',
+        'concierto': 'concierto',
+        'conciertos': 'concierto',
+        'teatro': 'teatro',
+        'conferencia': 'conferencia',
+        'conferencias': 'conferencia',
+        'festival': 'festival',
+        'festivales': 'festival',
+        'otro': 'otro',
+        'otros': 'otro'
+      };
+      
+      const normalizedCategory = eventData.category.toLowerCase().trim();
+      eventData.category = categoryMap[normalizedCategory] || 'otro';
+    }
+    
     const event = await Event.create(eventData);
     
     res.status(201).json({
@@ -124,6 +144,26 @@ export const updateEvent = async (req, res) => {
         success: false,
         message: 'El aforo total debe ser mayor a 0'
       });
+    }
+    
+    // Normalizar categoría: convertir a minúsculas y mapear valores
+    if (eventData.category) {
+      const categoryMap = {
+        'deporte': 'deportes',
+        'deportes': 'deportes',
+        'concierto': 'concierto',
+        'conciertos': 'concierto',
+        'teatro': 'teatro',
+        'conferencia': 'conferencia',
+        'conferencias': 'conferencia',
+        'festival': 'festival',
+        'festivales': 'festival',
+        'otro': 'otro',
+        'otros': 'otro'
+      };
+      
+      const normalizedCategory = eventData.category.toLowerCase().trim();
+      eventData.category = categoryMap[normalizedCategory] || 'otro';
     }
     
     await event.update(eventData);
